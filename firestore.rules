@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Formato de um item da fila
+    function valido(d) {
+      return d.keys().hasOnly(['titulo', 'tipo', 'status', 'progresso', 'nota', 'comentario',
+                               'uid', 'autor', 'criadoEm', 'atualizadoEm'])
+        && d.titulo is string && d.titulo.size() > 0 && d.titulo.size() <= 100
+        && d.tipo in ['livro', 'jogo', 'curso', 'manga', 'anime']
+        && d.status in ['fila', 'andamento', 'concluido']
+        && d.progresso is int && d.progresso >= 0 && d.progresso <= 100
+        && d.nota is int && d.nota >= 0 && d.nota <= 5
+        && d.comentario is string && d.comentario.size() <= 500
+        && d.autor is string && d.autor.size() <= 64;
+    }
+
+    match /itens/{id} {
+      // Cada pessoa só vê os próprios itens
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+
+      // Só quem está logado adiciona, sempre em seu próprio nome
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && !('atualizadoEm' in request.resource.data)
+        && valido(request.resource.data);
+
+      // Só o dono edita (sem trocar o dono nem a data de criação)
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.criadoEm == resource.data.criadoEm
+        && request.resource.data.atualizadoEm == request.time
+        && valido(request.resource.data);
+
+      // Só o dono exclui
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+  }
+}

@@ -477,30 +477,48 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  // ================= BANCO DE DADOS (local: localStorage) =================
-  // Os itens ficam salvos só neste navegador.
-  const CHAVE = "meu-progresso";
-  let aoMudarItens = () => {};
-  const lerTodos = () => JSON.parse(localStorage.getItem(CHAVE) || "[]");
-  const gravarTodos = (lista) => { localStorage.setItem(CHAVE, JSON.stringify(lista)); aoMudarItens(lerTodos()); };
+  // ================= BANCO DE DADOS (nuvem: Firebase) =================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+    onSnapshot, query, where, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // READ
-  const ouvirItens = (uid, aoMudar) => { aoMudarItens = aoMudar; aoMudar(lerTodos()); };
+  // Configuração do SDK (Console do Firebase → Configurações do projeto → App da Web)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBWIQ1HqaeDt3g1AvugF9_OBtSB8EBRZVo",
+    authDomain: "projeto-ff561.firebaseapp.com",
+    projectId: "projeto-ff561",
+    storageBucket: "projeto-ff561.firebasestorage.app",
+    messagingSenderId: "685182347321",
+    appId: "1:685182347321:web:1ed5e4c6bc695092f905e8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const colecao = collection(db, "itens");
+
+  // READ (em tempo real): só os itens do usuário logado
+  const ouvirItens = (uid, aoMudar, aoErrar) =>
+    onSnapshot(query(colecao, where("uid", "==", uid)),
+      (snap) => aoMudar(snap.docs.map(d => ({ id: d.id, ...d.data() }))), aoErrar);
   // CREATE
-  const adicionarItem = async (dados) =>
-    gravarTodos([{ ...dados, id: crypto.randomUUID(), criadoEm: Date.now() }, ...lerTodos()]);
+  const adicionarItem = (dados) => addDoc(colecao, { ...dados, criadoEm: serverTimestamp() });
   // UPDATE
-  const atualizarItem = async (id, dados) =>
-    gravarTodos(lerTodos().map(i => i.id === id ? { ...i, ...dados, atualizadoEm: Date.now() } : i));
+  const atualizarItem = (id, dados) => updateDoc(doc(db, "itens", id), { ...dados, atualizadoEm: serverTimestamp() });
   // DELETE
-  const excluirItem = async (id) => gravarTodos(lerTodos().filter(i => i.id !== id));
+  const excluirItem = (id) => deleteDoc(doc(db, "itens", id));
 
-  // Sem login nesta versão: todo mundo é o "dono" dos itens deste navegador
-  const LOGIN_ATIVO = false;
-  const observarLogin = (cb) => cb({ uid: "local", email: "voce@local" });
-  const entrar = async () => {};
-  const criarConta = async () => {};
-  const sair = async () => {};
+  // Login com e-mail e senha
+  const LOGIN_ATIVO = true;
+  const observarLogin = (cb) => onAuthStateChanged(auth, cb);
+  const entrar = (email, senha) => signInWithEmailAndPassword(auth, email, senha);
+  const criarConta = (email, senha) => createUserWithEmailAndPassword(auth, email, senha);
+  const sair = () => signOut(auth);
   // ================= FIM DO BANCO DE DADOS =================
 
   const TIPOS = { livro: "Livro", jogo: "Jogo", curso: "Curso de programação", manga: "Mangá", anime: "Anime" };
