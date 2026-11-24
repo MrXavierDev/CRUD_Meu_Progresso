@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Progresso</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<style>
+  /* ================= TEMAS (um por assunto) ================= */
+  body {                                   /* 🗂️ Todos: claro e neutro */
+    --bg: #f6f7fb; --card: #fff; --text: #111827; --muted: #6b7280; --border: #e8eaf0;
+    --primary: #4f46e5; --primary-bg: #eef2ff; --input-bg: #fff; --header-bg: #fff;
+    --fila: #64748b; --andamento: #f59e0b; --concluido: #16a34a;
+    --fonte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --fonte-titulo: var(--fonte);
+  }
+  body[data-aba="livro"] {                 /* 📚 Livros: papel e madeira */
+    --bg: #f4ede1; --card: #fffaf1; --text: #3b2a20; --muted: #8a7462; --border: #e4d6c1;
+    --primary: #8b5e34; --primary-bg: #f1e2cc; --input-bg: #fffdf8; --header-bg: #fffaf1;
+    --andamento: #c2410c; --concluido: #4d7c0f;
+    --fonte-titulo: Georgia, "Times New Roman", serif;
+  }
+  body[data-aba="jogo"] {                  /* 🎮 Jogos: escuro neon */
+    --bg: #0d0e1a; --card: #171830; --text: #eef0ff; --muted: #9a9cc4; --border: #2a2c4f;
+    --primary: #a855f7; --primary-bg: #2b1d4d; --input-bg: #10112a; --header-bg: #11122a;
+    --fila: #64748b; --andamento: #22d3ee; --concluido: #a3e635;
+  }
+  body[data-aba="curso"] {                 /* 💻 Cursos: terminal */
+    --bg: #0b0f14; --card: #0d1117; --text: #c9d1d9; --muted: #7d8590; --border: #30363d;
+    --primary: #238636; --primary-bg: #12261a; --input-bg: #0d1117; --header-bg: #010409;
+    --andamento: #d29922; --concluido: #3fb950;
+    --fonte: ui-monospace, "Cascadia Code", Consolas, monospace; --fonte-titulo: var(--fonte);
+  }
+  body[data-aba="manga"] {                 /* 📖 Mangás: quadrinho preto e branco */
+    --bg: #fff; --card: #fff; --text: #0a0a0a; --muted: #525252; --border: #0a0a0a;
+    --primary: #e11d48; --primary-bg: #ffe4e6; --input-bg: #fff; --header-bg: #fff;
+    --andamento: #e11d48; --concluido: #0a0a0a;
+    --fonte-titulo: Impact, "Arial Black", sans-serif;
+  }
+  body[data-aba="anime"] {                 /* 📺 Animes: streaming escuro */
+    --bg: #120f17; --card: #1d1824; --text: #f7f3ff; --muted: #a79cba; --border: #2f2839;
+    --primary: #c2410c; --primary-bg: #3a2216; --input-bg: #17131e; --header-bg: #17131e;
+    --fila: #8b7fa0; --andamento: #f97316; --concluido: #ec4899;
+  }
+
+  /* ================= BASE ================= */
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--fonte); background: var(--bg); color: var(--text); line-height: 1.4; }
+  body[data-aba="manga"] { background-image: radial-gradient(#0000000f 1px, transparent 1.4px); background-size: 9px 9px; }
+  [hidden] { display: none !important; }
+  button { border: 0; border-radius: 8px; padding: 9px 14px; font-size: .9rem; cursor: pointer;
+           font-weight: 600; font-family: inherit; color: inherit; }
+  button:disabled { opacity: .6; cursor: default; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-secondary { background: var(--primary-bg); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); }
+  .vazio { text-align: center; color: var(--muted); font-size: .88rem; padding: 20px 8px;
+           border: 1.5px dashed var(--border); border-radius: 10px; }
+  .estrelas { color: #f59e0b; letter-spacing: 1px; }
+
+  /* Topo */
+  header { background: var(--header-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  header .in { max-width: 1180px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center;
+               justify-content: space-between; gap: 12px; }
+  .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .marca .logo { width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--primary-bg);
+                 display: grid; place-items: center; font-size: 1.25rem; }
+  .marca h1 { margin: 0; font-size: 1.15rem; font-family: var(--fonte-titulo); }
+  .marca p { margin: 0; color: var(--muted); font-size: .8rem; }
+  .auth { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); }
+
+  /* Abas */
+  .abas-wrap { background: var(--header-bg); border-bottom: 1px solid var(--border); }
+  .abas { max-width: 1180px; margin: 0 auto; padding: 0 20px; display: flex; gap: 4px; overflow-x: auto; }
+  .abas button { background: none; border-radius: 0; padding: 12px 14px; color: var(--muted); font-weight: 600;
+                 border-bottom: 3px solid transparent; white-space: nowrap; }
+  .abas button.on { color: var(--text); border-bottom-color: var(--primary); }
+  .abas button small { font-weight: 500; opacity: .7; margin-left: 4px; }
+
+  .container { max-width: 1180px; margin: 0 auto; padding: 22px 20px 48px; }
+
+  /* Resumo + busca */
+  .resumo { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: var(--card);
+            border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }
+  .resumo-txt { flex: 1; min-width: 220px; }
+  .resumo-txt strong { font-size: 1.05rem; font-family: var(--fonte-titulo); }
+  .resumo-txt span { color: var(--muted); font-size: .85rem; }
+  .barra-geral { height: 10px; background: var(--primary-bg); border-radius: 999px; overflow: hidden; margin-top: 8px; display: flex; }
+  .barra-geral i { display: block; height: 100%; transition: width .4s; }
+  .legenda { display: flex; gap: 14px; font-size: .8rem; color: var(--muted); flex-wrap: wrap; }
+  .legenda span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+  .busca { position: relative; margin-bottom: 18px; }
+  .busca input { padding-left: 36px; }
+  .busca::before { content: "🔎"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: .85rem; opacity: .6; }
+
+  /* Ações dos itens (iguais em todos os temas) */
+  .acoes { display: flex; gap: 4px; flex-wrap: wrap; }
+  .acoes button { padding: 5px 9px; font-size: .78rem; border-radius: 7px; background: var(--primary-bg); }
+  .acoes .acao-principal { background: var(--primary); color: #fff; }
+  .acoes .del:hover { background: #fee2e2; color: #dc2626; }
+
+  /* ================= 🗂️ TODOS: quadro ================= */
+  .v-quadro { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .coluna { background: #eef0f5; border-radius: 14px; padding: 12px; }
+  .coluna-topo { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 12px; }
+  .coluna-topo h2 { margin: 0; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+  .coluna-topo h2::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .contador { font-size: .8rem; font-weight: 700; color: var(--muted); background: #fff; border-radius: 999px; padding: 2px 10px; }
+  .cards { display: grid; gap: 10px; }
+  .cartao { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+            box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+  .c-topo { display: flex; gap: 10px; }
+  .c-icone { width: 36px; height: 36px; flex: none; border-radius: 9px; display: grid; place-items: center; font-size: 1.1rem; }
+  .c-icone.livro { background: #f1e2cc; } .c-icone.jogo { background: #ede9fe; }
+  .c-icone.curso { background: #dcfce7; } .c-icone.manga { background: #ffe4e6; } .c-icone.anime { background: #ffedd5; }
+  .c-titulo { margin: 0; font-size: .98rem; word-break: break-word; }
+  .c-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+  .c-barra { height: 6px; background: #eef0f4; border-radius: 999px; overflow: hidden; margin-top: 10px; }
+  .c-barra span { display: block; height: 100%; background: var(--andamento); }
+  .concluido .c-barra span { background: var(--concluido); }
+  .c-coment { margin: 10px 0 0; font-size: .85rem; white-space: pre-wrap; word-break: break-word; }
+  .c-rodape { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .c-meta { font-size: .72rem; color: var(--muted); }
+
+  /* ================= 📚 LIVROS: estante ================= */
+  .v-estante { display: grid; gap: 28px; }
+  .prateleira h2 { font-family: var(--fonte-titulo); font-size: 1.25rem; margin: 0 0 12px; }
+  .prateleira h2 small { font-family: var(--fonte); font-size: .8rem; color: var(--muted); font-weight: 500; }
+  .livros { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; padding: 0 12px 14px;
+            border-bottom: 12px solid #8b5e34; border-radius: 0 0 4px 4px; box-shadow: 0 10px 12px -8px #5b3a1e66; }
+  .livros .vazio { flex: 1; margin-bottom: 4px; }
+  .livro { width: 140px; display: grid; gap: 8px; }
+  .capa { position: relative; aspect-ratio: 2 / 3; border-radius: 3px 8px 8px 3px; padding: 14px 12px 12px 18px; color: #fff;
+          background: linear-gradient(90deg, #0003 0 7px, #fff2 7px 9px, transparent 9px), var(--capa);
+          box-shadow: 3px 4px 10px #3b2a2055; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+  .capa-titulo { font-family: var(--fonte-titulo); font-weight: 700; font-size: .95rem; line-height: 1.2;
+                 overflow-wrap: break-word; hyphens: auto; text-shadow: 0 1px 2px #0005;
+                 display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .capa.com-selo .capa-titulo { padding-right: 24px; }  /* espaço para a fitinha/selo */
+  .capa-nota { font-size: .75rem; color: #fde68a; }
+  .marcador { position: absolute; top: 0; right: 12px; background: #dc2626; color: #fff; font-size: .7rem; font-weight: 700;
+              padding: 10px 4px 6px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); }
+  .selo { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: grid; place-items: center;
+          background: #fffaf1; color: var(--concluido); font-size: .8rem; font-weight: 700; border-radius: 50%; }
+  .livro-prog { height: 4px; background: #e4d6c1; border-radius: 999px; overflow: hidden; }
+  .livro-prog span { display: block; height: 100%; background: var(--andamento); }
+  .livro-coment { margin: 0; font-size: .8rem; color: var(--muted); font-style: italic; word-break: break-word;
+                  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* ================= 🎮 JOGOS: backlog neon ================= */
+  .v-backlog { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .lane h2 { margin: 0 0 12px; font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; display: flex; gap: 8px; align-items: center; }
+  .lane h2 span { margin-left: auto; color: var(--muted); font-size: .8rem; }
+  .lane { display: grid; gap: 12px; }
+  .jogo { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px;
+          border-left: 4px solid var(--fila); }
+  .jogo.andamento { border-left-color: var(--andamento); box-shadow: 0 0 18px #22d3ee22; }
+  .jogo.concluido { border-left-color: var(--concluido); }
+  .jogo h3 { margin: 0; font-size: 1rem; word-break: break-word; }
+  .jogo-topo { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .xp { height: 8px; background: #0d0e1a; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+  .xp span { display: block; height: 100%; background: linear-gradient(90deg, #22d3ee, #a855f7); box-shadow: 0 0 10px #a855f7; }
+  .jogo.concluido .xp span { background: linear-gradient(90deg, #a3e635, #22c55e); box-shadow: 0 0 10px #a3e635; }
+  .xp-l { font-size: .72rem; color: var(--muted); margin-top: 6px; letter-spacing: .06em; text-transform: uppercase; }
+  .jogo p { margin: 10px 0 0; font-size: .85rem; color: var(--muted); word-break: break-word; }
+  .jogo .acoes { margin-top: 12px; }
+
+  /* ================= 💻 CURSOS: terminal ================= */
+  .t-janela { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+              box-shadow: 0 12px 40px #0008; }
+  .t-barra { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #161b22; border-bottom: 1px solid var(--border); }
+  .t-barra i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f56; }
+  .t-barra i:nth-child(2) { background: #ffbd2e; } .t-barra i:nth-child(3) { background: #27c93f; }
+  .t-barra span { margin-left: 10px; color: var(--muted); font-size: .8rem; }
+  .t-corpo { padding: 16px 18px 20px; font-size: .9rem; display: grid; gap: 18px; }
+  .t-coment { color: var(--muted); margin-bottom: 6px; }
+  .t-linha { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 6px 8px; border-radius: 6px; }
+  .t-linha:hover { background: #161b22; }
+  .t-box { color: var(--muted); } .andamento .t-box { color: var(--andamento); } .concluido .t-box { color: var(--concluido); }
+  .t-nome { color: #e6edf3; word-break: break-word; }
+  .concluido .t-nome { color: var(--muted); text-decoration: line-through; }
+  .t-prog { color: var(--andamento); white-space: pre; } .concluido .t-prog { color: var(--concluido); }
+  .t-extra { grid-column: 2 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .t-obs { grid-column: 2 / -1; color: #8b949e; font-size: .82rem; white-space: pre-wrap; word-break: break-word; }
+  .t-vazio { color: var(--muted); padding-left: 8px; }
+  .v-terminal .acoes button { background: #21262d; border: 1px solid var(--border); }
+  .v-terminal .acoes .acao-principal { background: #238636; border-color: #2ea043; }
+  .t-cursor::after { content: "▋"; color: var(--primary); animation: piscar 1s steps(1) infinite; }
+  @keyframes piscar { 50% { opacity: 0; } }
+
+  /* ================= 📖 MANGÁS: quadrinho ================= */
+  .v-manga { display: grid; gap: 30px; }
+  .balao { display: inline-block; position: relative; margin: 0 0 16px; padding: 8px 18px; background: #fff;
+           border: 3px solid #0a0a0a; border-radius: 22px; font-family: var(--fonte-titulo); font-weight: 400;
+           font-size: 1.35rem; letter-spacing: .04em; text-transform: uppercase; }
+  .balao::after { content: ""; position: absolute; left: 26px; bottom: -14px; width: 18px; height: 14px; background: #0a0a0a;
+                  clip-path: polygon(0 0, 100% 0, 10% 100%); }
+  .balao small { font-family: var(--fonte); font-size: .8rem; color: var(--primary); font-weight: 700; margin-left: 6px; }
+  .paineis { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+  .painel { position: relative; background: #fff; border: 3px solid #0a0a0a; padding: 14px; box-shadow: 5px 5px 0 #0a0a0a;
+            transform: rotate(-.6deg); }
+  .painel:nth-child(even) { transform: rotate(.6deg); }
+  .painel h3 { margin: 0; font-family: var(--fonte-titulo); font-weight: 400; font-size: 1.15rem; letter-spacing: .03em;
+               text-transform: uppercase; word-break: break-word; }
+  .tinta { height: 10px; border: 2px solid #0a0a0a; margin-top: 12px;
+           background: repeating-linear-gradient(45deg, #fff 0 4px, #e5e5e5 4px 6px); }
+  .tinta span { display: block; height: 100%; background: var(--primary); }
+  .painel-l { font-size: .75rem; font-weight: 800; margin-top: 6px; text-transform: uppercase; }
+  .painel p { margin: 10px 0 0; font-size: .85rem; word-break: break-word; }
+  .painel .acoes { margin-top: 12px; }
+  .v-manga .acoes button { border: 2px solid #0a0a0a; background: #fff; border-radius: 4px; }
+  .v-manga .acoes .acao-principal { background: var(--primary); color: #fff; }
+  .fim { position: absolute; top: -12px; right: -8px; background: #0a0a0a; color: #fff; font-family: var(--fonte-titulo);
+         padding: 4px 10px; transform: rotate(8deg); font-size: .95rem; letter-spacing: .05em; }
+
+  /* ================= 📺 ANIMES: streaming ================= */
+  .v-anime { display: grid; gap: 26px; }
+  .fileira h2 { margin: 0 0 12px; font-size: 1.15rem; display: flex; gap: 8px; align-items: baseline; }
+  .fileira h2 span { color: var(--muted); font-size: .85rem; font-weight: 500; }
+  .trilho { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
+  .trilho .vazio { flex: 1; }
+  .ep { flex: 0 0 240px; scroll-snap-align: start; display: grid; gap: 6px; align-content: start; }
+  .thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; background: var(--capa); overflow: hidden;
+           box-shadow: 0 6px 18px #0007; }
+  .thumb::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 75% 25%, #fff4, transparent 60%); }
+  .play { position: absolute; inset: 0; margin: auto; width: 44px; height: 44px; border-radius: 50%; background: #0009;
+          color: #fff; display: grid; place-items: center; font-size: 1rem; z-index: 1; transition: transform .15s; }
+  .ep:hover .play { transform: scale(1.12); }
+  .thumb-nota { position: absolute; top: 8px; left: 8px; background: #000a; color: #fde68a; font-size: .72rem;
+                padding: 2px 7px; border-radius: 6px; z-index: 1; }
+  .tag-fim { position: absolute; top: 8px; right: 8px; background: #be185d; color: #fff; font-size: .65rem;
+             font-weight: 800; padding: 3px 7px; border-radius: 5px; letter-spacing: .06em; z-index: 1; }
+  .assistido { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: #fff4; z-index: 1; }
+  .assistido span { display: block; height: 100%; background: var(--andamento); }
+  .ep.concluido .assistido span { background: var(--concluido); }
+  .ep h3 { margin: 4px 0 0; font-size: .98rem; word-break: break-word; }
+  .ep-sub { font-size: .78rem; color: var(--muted); }
+  .ep p { margin: 0; font-size: .82rem; color: var(--muted); word-break: break-word;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* ================= Janelas, campos e avisos ================= */
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px;
+                            font-size: .95rem; font-family: inherit; background: var(--input-bg); color: var(--text); }
+  textarea { resize: vertical; min-height: 70px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none;
+              align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
+           width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.25); max-height: 92vh; overflow: auto; }
+  .modal.largo { max-width: 520px; }
+  .modal h2 { margin: 0 0 16px; font-size: 1.15rem; font-family: var(--fonte-titulo); }
+  .campo { margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+  .modal .erro { color: #dc2626; font-size: .85rem; min-height: 1.2em; margin: 0; }
+  body[data-aba="jogo"] .modal .erro, body[data-aba="curso"] .modal .erro,
+  body[data-aba="anime"] .modal .erro { color: #f87171; }   /* vermelho mais claro nos temas escuros */
+  .botoes { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .link { background: none; padding: 0; color: var(--primary); font-size: .85rem; font-weight: 500; margin-top: 14px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 140%); opacity: 0;
+           background: #111827; color: #fff; padding: 11px 16px; border-radius: 10px; font-size: .9rem;
+           transition: transform .3s, opacity .3s; z-index: 30; max-width: 90vw; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .toast.erro { background: #dc2626; }
+  .toast.ok { background: #16a34a; }
+
+  /* ================= Tela inicial (sem login) ================= */
+  body.iniciando #app, body.iniciando #inicio, body.iniciando .auth button { display: none; }
+  body.deslogado #app, body:not(.deslogado) #inicio { display: none; }
+  .inicio { max-width: 1100px; margin: 0 auto; padding: 48px 20px 60px; }
+  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+  .selo-hero { display: inline-block; background: var(--primary-bg); color: var(--primary); font-weight: 700;
+               font-size: .8rem; padding: 6px 12px; border-radius: 999px; }
+  .hero h2 { font-size: 2.3rem; line-height: 1.15; margin: 16px 0 12px; letter-spacing: -.02em; }
+  .hero h2 span { color: var(--primary); }
+  .hero p { color: var(--muted); font-size: 1.05rem; margin: 0 0 22px; }
+  .hero-botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .btn-grande { padding: 13px 22px; font-size: 1rem; border-radius: 10px; }
+  .hero small { color: var(--muted); }
+  .mock { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 14px;
+          box-shadow: 0 20px 50px rgba(79,70,229,.15); }
+  .mock-barra { display: flex; gap: 6px; margin-bottom: 12px; }
+  .mock-barra i { width: 10px; height: 10px; border-radius: 50%; background: #e5e7eb; }
+  .mock-prog { height: 8px; background: #eef0f4; border-radius: 99px; display: flex; overflow: hidden; margin: 6px 0 14px; }
+  .mock-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mock-col > div { background: #eef0f5; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; }
+  .mock-col h4 { margin: 0 0 2px; font-size: .72rem; color: var(--muted); }
+  .mock-card { background: #fff; border-radius: 8px; padding: 7px 8px; font-size: .75rem; font-weight: 600; }
+  .mock-card i { display: block; height: 4px; border-radius: 9px; margin-top: 6px;
+                 background: linear-gradient(90deg, #f59e0b var(--p), #eef0f4 var(--p)); }
+  .mock-card i.ok { background: #16a34a; }
+  .assuntos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 56px; }
+  .assunto { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+  .assunto b { display: block; font-size: 1.6rem; margin-bottom: 6px; }
+  .assunto strong { display: block; }
+  .assunto span { color: var(--muted); font-size: .82rem; }
+  .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }
+  .passo { display: flex; gap: 12px; align-items: center; color: var(--muted); }
+  .passo b { width: 34px; height: 34px; flex: none; border-radius: 50%; background: var(--primary); color: #fff;
+             display: grid; place-items: center; }
+  @media (max-width: 900px) {
+    .hero, .passos { grid-template-columns: 1fr; }
+    .assuntos { grid-template-columns: repeat(2, 1fr); }
+    .hero h2 { font-size: 1.8rem; }
+    .v-quadro, .v-backlog { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .marca p, #auth-info { display: none; }
+    .marca h1 { white-space: nowrap; font-size: 1.05rem; }
+    .marca .logo { width: 34px; height: 34px; }
+    .auth { gap: 6px; }
+    .auth button { padding: 8px 10px; font-size: .82rem; white-space: nowrap; }
+    .container { padding: 16px 12px 40px; }
+    .abas { padding: 0 8px; }
+    .grid { grid-template-columns: 1fr; }
+    .livros { gap: 14px; justify-content: center; }
+    .livro { width: 130px; }
+    .t-corpo { padding: 12px; font-size: .82rem; }
+    .t-linha { grid-template-columns: auto 1fr; }
+    .t-prog { grid-column: 2; }
+    .ep { flex-basis: 78%; }
+  }
+</style>
+</head>
+<body data-aba="todos" class="iniciando">
+<header>
+  <div class="in">
+    <div class="marca">
+      <div class="logo" id="topo-icone">📈</div>
+      <div>
+        <h1 id="topo-titulo">Meu Progresso</h1>
+        <p id="topo-sub">Tudo o que você está lendo, jogando, estudando e assistindo</p>
+      </div>
+    </div>
+    <div class="auth">
+      <span id="auth-info"></span>
+      <button class="btn-ghost" id="btn-login">🔒 Entrar</button>
+      <button class="btn-ghost" id="btn-logout" hidden>Sair</button>
+      <button class="btn-primary" id="btn-criar">Criar conta</button>
+      <button class="btn-primary" id="btn-novo" hidden>+ Adicionar</button>
+    </div>
+  </div>
+</header>
+
+<!-- Tela inicial: aparece quando ninguém está logado -->
+<section id="inicio" class="inicio">
+  <div class="hero">
+    <div>
+      <span class="selo-hero">📈 Seu progresso em um só lugar</span>
+      <h2>Acompanhe tudo o que você está <span>lendo, jogando, estudando e assistindo</span>.</h2>
+      <p>Organize livros, jogos, cursos de programação, mangás e animes em <b>na fila</b>, <b>em andamento</b> e <b>concluídos</b>.
+         Atualize o progresso com um clique e veja quanto já terminou.</p>
+      <div class="hero-botoes">
+        <button class="btn-primary btn-grande" id="hero-criar">Criar conta grátis</button>
+        <button class="btn-ghost btn-grande" id="hero-entrar">Já tenho conta</button>
+      </div>
+      <small>🔒 Seus dados ficam salvos na nuvem e só você vê.</small>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-barra"><i></i><i></i><i></i></div>
+      <b>3 de 8 concluídos (38%)</b>
+      <div class="mock-prog"><span style="width:38%;background:#16a34a"></span><span style="width:25%;background:#f59e0b"></span></div>
+      <div class="mock-col">
+        <div><h4>Na fila</h4><div class="mock-card">🎮 Hollow Knight</div><div class="mock-card">📖 Berserk</div></div>
+        <div><h4>Em andamento</h4><div class="mock-card">📚 Clean Code<i style="--p:60%"></i></div><div class="mock-card">📺 Frieren<i style="--p:40%"></i></div></div>
+        <div><h4>Concluídos</h4><div class="mock-card">💻 Curso de Git<i class="ok"></i></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="assuntos">
+    <div class="assunto"><b>📚</b><strong>Livros</strong><span>Uma estante com as capas</span></div>
+    <div class="assunto"><b>🎮</b><strong>Jogos</strong><span>Backlog com barra de XP</span></div>
+    <div class="assunto"><b>💻</b><strong>Cursos</strong><span>Visual de terminal</span></div>
+    <div class="assunto"><b>📖</b><strong>Mangás</strong><span>Painéis de quadrinho</span></div>
+    <div class="assunto"><b>📺</b><strong>Animes</strong><span>Estilo streaming</span></div>
+  </div>
+  <div class="passos">
+    <div class="passo"><b>1</b>Crie sua conta com e-mail e senha</div>
+    <div class="passo"><b>2</b>Adicione o que você quer terminar</div>
+    <div class="passo"><b>3</b>Acompanhe e conclua, um passo por vez</div>
+  </div>
+</section>
+
+<div id="app">
+<!-- Abas: cada assunto tem um visual diferente -->
+<div class="abas-wrap">
+  <nav class="abas" id="abas" aria-label="Assuntos">
+    <button data-aba="todos" class="on">🗂️ Todos<small id="n-todos"></small></button>
+    <button data-aba="livro">📚 Livros<small id="n-livro"></small></button>
+    <button data-aba="jogo">🎮 Jogos<small id="n-jogo"></small></button>
+    <button data-aba="curso">💻 Cursos<small id="n-curso"></small></button>
+    <button data-aba="manga">📖 Mangás<small id="n-manga"></small></button>
+    <button data-aba="anime">📺 Animes<small id="n-anime"></small></button>
+  </nav>
+</div>
+
+<div class="container">
+  <section class="resumo">
+    <div class="resumo-txt">
+      <strong id="resumo-titulo">Nada por aqui ainda</strong><br>
+      <span id="resumo-sub"></span>
+      <div class="barra-geral"><i id="b-concluido"></i><i id="b-andamento"></i></div>
+    </div>
+    <div class="legenda" id="legenda"></div>
+  </section>
+
+  <div class="busca"><input id="busca" placeholder="Buscar por título ou comentário..."></div>
+
+  <!-- Aqui entra o layout do assunto escolhido -->
+  <main id="conteudo"></main>
+</div>
+</div>
+
+<!-- Janela: adicionar / editar item -->
+<div class="modal-bg" id="modal-item">
+  <form class="modal largo" id="form">
+    <h2 id="form-titulo">Adicionar</h2>
+    <input type="hidden" id="id">
+    <div class="grid">
+      <div class="campo full">
+        <label for="titulo">Título *</label>
+        <input id="titulo" required maxlength="100" placeholder="Ex.: Código Limpo, Hollow Knight, One Piece, Frieren...">
+      </div>
+      <div class="campo">
+        <label for="tipo">Tipo</label>
+        <select id="tipo"></select>
+      </div>
+      <div class="campo">
+        <label for="status">Situação</label>
+        <select id="status"></select>
+      </div>
+      <div class="campo">
+        <label for="progresso">Progresso (%)</label>
+        <input id="progresso" type="number" min="0" max="100" step="5" value="0">
+      </div>
+      <div class="campo">
+        <label for="nota">Nota</label>
+        <select id="nota"></select>
+      </div>
+      <div class="campo full">
+        <label for="comentario">Comentário (opcional)</label>
+        <textarea id="comentario" maxlength="500" placeholder="Por que quero ver isso? O que achei até agora?"></textarea>
+      </div>
+    </div>
+    <div class="botoes">
+      <button type="button" class="btn-secondary" id="btn-cancelar">Cancelar</button>
+      <button type="submit" class="btn-primary" id="btn-salvar">Adicionar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Janela: login -->
+<div class="modal-bg" id="modal-login">
+  <form class="modal" id="form-login">
+    <h2 id="login-titulo">Entrar</h2>
+    <div class="campo">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" required autocomplete="username">
+    </div>
+    <div class="campo">
+      <label for="login-senha">Senha</label>
+      <input id="login-senha" type="password" required minlength="6" autocomplete="current-password">
+    </div>
+    <p class="erro" id="login-erro"></p>
+    <div class="botoes">
+      <button type="button" class="btn-secondary" id="btn-fechar-login">Cancelar</button>
+      <button type="submit" class="btn-primary" id="btn-entrar">Entrar</button>
+    </div>
+    <button type="button" class="link" id="btn-trocar-modo">Não tem conta? Criar conta</button>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ================= BANCO DE DADOS (local: localStorage) =================
+  // Os itens ficam salvos só neste navegador.
+  const CHAVE = "meu-progresso";
+  let aoMudarItens = () => {};
+  const lerTodos = () => JSON.parse(localStorage.getItem(CHAVE) || "[]");
+  const gravarTodos = (lista) => { localStorage.setItem(CHAVE, JSON.stringify(lista)); aoMudarItens(lerTodos()); };
+
+  // READ
+  const ouvirItens = (uid, aoMudar) => { aoMudarItens = aoMudar; aoMudar(lerTodos()); };
+  // CREATE
+  const adicionarItem = async (dados) =>
+    gravarTodos([{ ...dados, id: crypto.randomUUID(), criadoEm: Date.now() }, ...lerTodos()]);
+  // UPDATE
+  const atualizarItem = async (id, dados) =>
+    gravarTodos(lerTodos().map(i => i.id === id ? { ...i, ...dados, atualizadoEm: Date.now() } : i));
+  // DELETE
+  const excluirItem = async (id) => gravarTodos(lerTodos().filter(i => i.id !== id));
+
+  // Sem login nesta versão: todo mundo é o "dono" dos itens deste navegador
+  const LOGIN_ATIVO = false;
+  const observarLogin = (cb) => cb({ uid: "local", email: "voce@local" });
+  const entrar = async () => {};
+  const criarConta = async () => {};
+  const sair = async () => {};
+  // ================= FIM DO BANCO DE DADOS =================
+
+  const TIPOS = { livro: "Livro", jogo: "Jogo", curso: "Curso de programação", manga: "Mangá", anime: "Anime" };
+  const ICONES = { livro: "📚", jogo: "🎮", curso: "💻", manga: "📖", anime: "📺" };
+  const STATUS = { fila: "Na fila", andamento: "Em andamento", concluido: "Concluído" };
+  const NOTAS = ["Sem nota", "★", "★★", "★★★", "★★★★", "★★★★★"];
+
+  // Textos de cada aba (cada assunto tem seu "vocabulário")
+  const ABAS = {
+    todos: { icone: "📈", titulo: "Meu Progresso", sub: "Tudo o que você está lendo, jogando, estudando e assistindo",
+             status: { fila: "Na fila", andamento: "Em andamento", concluido: "Concluídos" }, fazendo: "em andamento", comecar: "▶ Começar" },
+    livro: { icone: "📚", titulo: "Minha Estante", sub: "Os livros que estou lendo, quero ler e já li",
+             status: { fila: "Quero ler", andamento: "Lendo", concluido: "Lidos" }, fazendo: "lendo", comecar: "▶ Ler" },
+    jogo:  { icone: "🎮", titulo: "Meu Backlog", sub: "Jogando agora, na fila e zerados",
+             status: { fila: "Backlog", andamento: "Jogando", concluido: "Zerados" }, fazendo: "jogando", comecar: "▶ Jogar" },
+    curso: { icone: "💻", titulo: "~/meus-cursos", sub: "$ estudar --todo-dia",
+             status: { fila: "Pendentes", andamento: "Estudando", concluido: "Concluídos" }, fazendo: "estudando", comecar: "▶ Iniciar" },
+    manga: { icone: "📖", titulo: "Meus Mangás", sub: "Lendo, quero ler e finalizados",
+             status: { fila: "Quero ler", andamento: "Lendo", concluido: "Finalizados" }, fazendo: "lendo", comecar: "▶ Ler" },
+    anime: { icone: "📺", titulo: "Minha Watchlist", sub: "Assistindo, quero assistir e completos",
+             status: { fila: "Quero assistir", andamento: "Assistindo", concluido: "Completos" }, fazendo: "assistindo", comecar: "▶ Assistir" },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("form"), busca = $("busca");
+
+  // Preenche os selects do formulário
+  for (const [v, t] of Object.entries(TIPOS)) $("tipo").add(new Option(`${ICONES[v]} ${t}`, v));
+  for (const [v, t] of Object.entries(STATUS)) $("status").add(new Option(t, v));
+  NOTAS.forEach((t, i) => $("nota").add(new Option(t, i)));
+
+  let itens = [];
+  let usuario = null;
+  let carregado = false;
+  let aba = Object.hasOwn(ABAS, location.hash.slice(1)) ? location.hash.slice(1) : "todos";
+
+  function toast(msg, tipo = "") {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + tipo;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.className = "toast", 2800);
+  }
+
+  // Evita que o texto digitado vire HTML na página
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtData = (v) => {
+    const d = typeof v?.toDate === "function" ? v.toDate() : (typeof v === "number" ? new Date(v) : null);
+    return d ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "") : "agora";
+  };
+  const limitar = (n, min, max) => Math.min(max, Math.max(min, parseInt(n, 10) || 0));
+  const ehDono = (item) => !!usuario && item.uid === usuario.uid;
+  const statusDe = (i) => Object.hasOwn(STATUS, i.status) ? i.status : "fila";
+  const tipoDe = (i) => Object.hasOwn(TIPOS, i.tipo) ? i.tipo : "livro";
+  const progDe = (i) => statusDe(i) === "concluido" ? 100 : limitar(i.progresso, 0, 100);
+  const notaDe = (i) => limitar(i.nota, 0, 5);
+  const estrelas = (i) => notaDe(i) ? `<span class="estrelas">${"★".repeat(notaDe(i))}</span>` : "";
+  const vazio = (txt) => `<div class="vazio">${!carregado ? "Carregando..." : txt}</div>`;
+
+  // Botões de ação de um item (só aparecem para o dono)
+  function acoes(i, A) {
+    if (!ehDono(i)) return "";
+    const st = statusDe(i), id = esc(i.id);
+    const principal = st === "fila" ? `<button class="acao-principal" data-acao="comecar" data-id="${id}">${A.comecar}</button>`
+      : st === "andamento" ? `<button class="acao-principal" data-acao="mais" data-id="${id}">+10%</button>` : "";
+    return `<div class="acoes">${principal}
+      <button data-acao="editar" data-id="${id}" title="Editar" aria-label="Editar">✏️</button>
+      <button class="del" data-acao="excluir" data-id="${id}" title="Excluir" aria-label="Excluir">🗑️</button></div>`;
+  }
+
+  // ================= UM LAYOUT PARA CADA ASSUNTO =================
+  const ORDEM_QUADRO = ["fila", "andamento", "concluido"];   // Todos: da esquerda para a direita
+  const ORDEM_ASSUNTO = ["andamento", "fila", "concluido"];  // Assuntos: o que está em andamento primeiro
+
+  // 🗂️ Todos: quadro com 3 colunas
+  function layoutQuadro(g, A) {
+    const cor = { fila: "var(--fila)", andamento: "var(--andamento)", concluido: "var(--concluido)" };
+    return `<div class="v-quadro">${ORDEM_QUADRO.map(s => `
+      <section class="coluna" style="--c:${cor[s]}">
+        <div class="coluna-topo"><h2>${A.status[s]}</h2><span class="contador">${g[s].length}</span></div>
+        <div class="cards">${g[s].length ? g[s].map(i => `
+          <article class="cartao ${s}">
+            <div class="c-topo">
+              <div class="c-icone ${tipoDe(i)}">${ICONES[tipoDe(i)]}</div>
+              <div><h3 class="c-titulo">${esc(i.titulo)}</h3>
+                <div class="c-sub">${TIPOS[tipoDe(i)]} ${notaDe(i) ? "· " + estrelas(i) : ""}</div></div>
+            </div>
+            ${s !== "fila" ? `<div class="c-barra"><span style="width:${progDe(i)}%"></span></div>
+              <div class="c-sub">${progDe(i)}% concluído</div>` : ""}
+            ${i.comentario ? `<p class="c-coment">${esc(i.comentario)}</p>` : ""}
+            <div class="c-rodape"><span class="c-meta">Adicionado em ${fmtData(i.criadoEm)}</span>${acoes(i, A)}</div>
+          </article>`).join("") : vazio("Nada aqui ainda")}</div>
+      </section>`).join("")}</div>`;
+  }
+
+  // 📚 Livros: capas numa estante
+  const CORES_CAPA = ["#7c2d12", "#1e3a8a", "#14532d", "#581c87", "#9a3412", "#0f766e", "#831843", "#3f3f46"];
+  const corCapa = (txt) => CORES_CAPA[[...String(txt)].reduce((s, c) => s + c.charCodeAt(0), 0) % CORES_CAPA.length];
+  function layoutEstante(g, A) {
+    return `<div class="v-estante">${ORDEM_ASSUNTO.map(s => `
+      <section class="prateleira">
+        <h2>${A.status[s]} <small>${g[s].length}</small></h2>
+        <div class="livros">${g[s].length ? g[s].map(i => `
+          <article class="livro">
+            <div class="capa ${s !== "fila" ? "com-selo" : ""}" style="--capa:${corCapa(i.titulo)}">
+              <span class="capa-titulo">${esc(i.titulo)}</span>
+              ${notaDe(i) ? `<span class="capa-nota">${"★".repeat(notaDe(i))}</span>` : ""}
+              ${s === "andamento" ? `<span class="marcador">${progDe(i)}%</span>` : ""}
+              ${s === "concluido" ? `<span class="selo" title="Lido">✓</span>` : ""}
+            </div>
+            ${s === "andamento" ? `<div class="livro-prog"><span style="width:${progDe(i)}%"></span></div>` : ""}
+            ${i.comentario ? `<p class="livro-coment">“${esc(i.comentario)}”</p>` : ""}
+            ${acoes(i, A)}
+          </article>`).join("") : vazio("Prateleira vazia")}</div>
+      </section>`).join("")}</div>`;
+  }
+
+  // 🎮 Jogos: backlog com barra de XP
+  function layoutBacklog(g, A) {
+    const emoji = { andamento: "🕹️", fila: "📦", concluido: "🏆" };
+    return `<div class="v-backlog">${ORDEM_ASSUNTO.map(s => `
+      <section class="lane">
+        <h2>${emoji[s]} ${A.status[s]} <span>${g[s].length}</span></h2>
+        ${g[s].length ? g[s].map(i => `
+          <article class="jogo ${s}">
+            <div class="jogo-topo"><h3>${esc(i.titulo)}</h3>${estrelas(i)}</div>
+            ${s === "fila" ? `<div class="xp-l">Esperando sua vez</div>`
+              : `<div class="xp"><span style="width:${progDe(i)}%"></span></div>
+                 <div class="xp-l">${s === "concluido" ? "100% · zerado!" : `XP ${progDe(i)}%`}</div>`}
+            ${i.comentario ? `<p>${esc(i.comentario)}</p>` : ""}
+            ${acoes(i, A)}
+          </article>`).join("") : vazio("Nada por aqui")}
+      </section>`).join("")}</div>`;
+  }
+
+  // 💻 Cursos: janela de terminal
+  function layoutTerminal(g, A) {
+    const caixa = { fila: "[ ]", andamento: "[~]", concluido: "[x]" };
+    return `<div class="v-terminal"><div class="t-janela">
+      <div class="t-barra"><i></i><i></i><i></i><span>bash — ~/meus-cursos</span></div>
+      <div class="t-corpo">${ORDEM_ASSUNTO.map(s => `
+        <div>
+          <div class="t-coment">// ${A.status[s].toLowerCase()} (${g[s].length})</div>
+          ${g[s].length ? g[s].map(i => {
+            const cheios = Math.round(progDe(i) / 10);
+            return `
+            <div class="t-linha ${s}">
+              <span class="t-box">${caixa[s]}</span>
+              <span class="t-nome">${esc(i.titulo)}</span>
+              <span class="t-prog">[${"█".repeat(cheios)}${"░".repeat(10 - cheios)}] ${String(progDe(i)).padStart(3)}%</span>
+              ${i.comentario ? `<div class="t-obs"># ${esc(i.comentario)}</div>` : ""}
+              <div class="t-extra">${estrelas(i)}${acoes(i, A)}</div>
+            </div>`;
+          }).join("") : `<div class="t-vazio">  (vazio)</div>`}
+        </div>`).join("")}
+        <div class="t-coment t-cursor">$ </div>
+      </div>
+    </div></div>`;
+  }
+
+  // 📖 Mangás: painéis de quadrinho
+  function layoutPaineis(g, A) {
+    return `<div class="v-manga">${ORDEM_ASSUNTO.map(s => `
+      <section>
+        <h2 class="balao">${A.status[s]}! <small>${g[s].length}</small></h2>
+        <div class="paineis">${g[s].length ? g[s].map(i => `
+          <article class="painel ${s}">
+            ${s === "concluido" ? `<span class="fim">FIM!</span>` : ""}
+            <h3>${esc(i.titulo)}</h3>
+            ${estrelas(i)}
+            ${s === "fila" ? `<div class="painel-l">Na lista pra ler</div>`
+              : `<div class="tinta"><span style="width:${progDe(i)}%"></span></div>
+                 <div class="painel-l">${progDe(i)}% lido</div>`}
+            ${i.comentario ? `<p>${esc(i.comentario)}</p>` : ""}
+            ${acoes(i, A)}
+          </article>`).join("") : vazio("Nenhum mangá aqui")}</div>
+      </section>`).join("")}</div>`;
+  }
+
+  // 📺 Animes: fileiras de miniaturas, como num app de streaming
+  const GRADIENTES = [
+    "linear-gradient(135deg, #f97316, #db2777)", "linear-gradient(135deg, #7c3aed, #2563eb)",
+    "linear-gradient(135deg, #0ea5e9, #10b981)", "linear-gradient(135deg, #e11d48, #7c2d12)",
+    "linear-gradient(135deg, #a855f7, #ec4899)", "linear-gradient(135deg, #14b8a6, #1e3a8a)",
+  ];
+  const gradiente = (txt) => GRADIENTES[[...String(txt)].reduce((s, c) => s + c.charCodeAt(0), 0) % GRADIENTES.length];
+  function layoutStreaming(g, A) {
+    return `<div class="v-anime">${ORDEM_ASSUNTO.map(s => `
+      <section class="fileira">
+        <h2>${A.status[s]} <span>${g[s].length}</span></h2>
+        <div class="trilho">${g[s].length ? g[s].map(i => `
+          <article class="ep ${s}">
+            <div class="thumb" style="--capa:${gradiente(i.titulo)}">
+              <span class="play">▶</span>
+              ${notaDe(i) ? `<span class="thumb-nota">★ ${notaDe(i)}</span>` : ""}
+              ${s === "concluido" ? `<span class="tag-fim">COMPLETO</span>` : ""}
+              ${s !== "fila" ? `<div class="assistido"><span style="width:${progDe(i)}%"></span></div>` : ""}
+            </div>
+            <h3>${esc(i.titulo)}</h3>
+            <div class="ep-sub">${s === "fila" ? "Na sua lista" : s === "concluido" ? "Assistido até o fim" : `${progDe(i)}% assistido`}</div>
+            ${i.comentario ? `<p>${esc(i.comentario)}</p>` : ""}
+            ${acoes(i, A)}
+          </article>`).join("") : vazio("Nada aqui ainda")}</div>
+      </section>`).join("")}</div>`;
+  }
+
+  const LAYOUTS = { todos: layoutQuadro, livro: layoutEstante, jogo: layoutBacklog, curso: layoutTerminal, manga: layoutPaineis, anime: layoutStreaming };
+
+  // ---------- Desenha a tela (READ) ----------
+  function renderizar() {
+    const A = ABAS[usuario ? aba : "todos"];   // sem login: sempre o visual/título principal
+    document.body.dataset.aba = usuario ? aba : "todos";
+    $("topo-icone").textContent = A.icone;
+    $("topo-titulo").textContent = A.titulo;
+    $("topo-sub").textContent = A.sub;
+    $("abas").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.aba === aba));
+    $("n-todos").textContent = itens.length || "";
+    for (const t of Object.keys(TIPOS)) $("n-" + t).textContent = itens.filter(i => tipoDe(i) === t).length || "";
+
+    // Itens desta aba, separados por situação
+    const daAba = itens.filter(i => aba === "todos" || tipoDe(i) === aba);
+    const qtd = { fila: 0, andamento: 0, concluido: 0 };
+    daAba.forEach(i => qtd[statusDe(i)]++);
+    const total = daAba.length;
+
+    // Resumo
+    $("b-concluido").style.cssText = `width:${total ? qtd.concluido / total * 100 : 0}%;background:var(--concluido)`;
+    $("b-andamento").style.cssText = `width:${total ? qtd.andamento / total * 100 : 0}%;background:var(--andamento)`;
+    $("resumo-titulo").textContent = total
+      ? `${qtd.concluido} de ${total} ${A.status.concluido.toLowerCase()} (${Math.round(qtd.concluido / total * 100)}%)`
+      : "Nada por aqui ainda";
+    $("resumo-sub").textContent = !total ? "Clique em “+ Adicionar” para começar."
+      : qtd.andamento ? `${qtd.andamento} ${A.fazendo} agora. Bora terminar!` : "Nada em andamento. Que tal começar um da fila?";
+    const corLeg = { fila: "var(--fila)", andamento: "var(--andamento)", concluido: "var(--concluido)" };
+    $("legenda").innerHTML = ORDEM_QUADRO.map(s =>
+      `<span style="--c:${corLeg[s]}"><b>${qtd[s]}</b> ${A.status[s].toLowerCase()}</span>`).join("");
+
+    // Busca + layout do assunto
+    const termo = busca.value.trim().toLowerCase();
+    const grupos = { fila: [], andamento: [], concluido: [] };
+    daAba.filter(i => [i.titulo, i.comentario].some(v => String(v || "").toLowerCase().includes(termo)))
+         .forEach(i => grupos[statusDe(i)].push(i));
+    $("conteudo").innerHTML = LAYOUTS[aba](grupos, A);
+  }
+
+  busca.addEventListener("input", renderizar);
+  $("abas").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-aba]"); if (!b) return;
+    aba = b.dataset.aba;
+    history.replaceState(null, "", aba === "todos" ? location.pathname : "#" + aba);
+    renderizar();
+  });
+
+  // ---------- Janela do item (CREATE / UPDATE) ----------
+  const modalItem = $("modal-item");
+  function abrirItem(item = null) {
+    form.reset();
+    $("id").value = item ? item.id : "";
+    if (item) for (const c of ["titulo", "tipo", "status", "progresso", "nota", "comentario"]) $(c).value = item[c] ?? "";
+    else if (aba !== "todos") $("tipo").value = aba;   // já vem com o tipo da aba aberta
+    $("form-titulo").textContent = item ? "Editar" : "Adicionar";
+    $("btn-salvar").textContent = item ? "Salvar" : "Adicionar";
+    modalItem.classList.add("show");
+    $("titulo").focus();
+  }
+  const fecharItem = () => modalItem.classList.remove("show");
+
+  $("btn-novo").addEventListener("click", () => usuario ? abrirItem() : abrirLogin(true));
+  $("btn-cancelar").addEventListener("click", fecharItem);
+  modalItem.addEventListener("click", (e) => { if (e.target === modalItem) fecharItem(); });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!usuario) return toast("Entre para adicionar itens.", "erro");
+    const dados = {
+      titulo: $("titulo").value.trim(),
+      tipo: $("tipo").value,
+      status: $("status").value,
+      progresso: limitar($("progresso").value, 0, 100),
+      nota: limitar($("nota").value, 0, 5),
+      comentario: $("comentario").value.trim(),
+    };
+    if (!dados.titulo) return toast("Preencha o título.", "erro");
+    // regra simples: 100% = concluído e concluído = 100%
+    if (dados.progresso === 100) dados.status = "concluido";
+    if (dados.status === "concluido") dados.progresso = 100;
+
+    $("btn-salvar").disabled = true;
+    try {
+      if ($("id").value) {
+        await atualizarItem($("id").value, dados);
+        toast("Item atualizado!", "ok");
+      } else {
+        await adicionarItem({ ...dados, uid: usuario.uid, autor: usuario.nome });
+        toast("Adicionado!", "ok");
+      }
+      fecharItem();
+    } catch (erro) {
+      console.error(erro);
+      toast("Erro ao salvar: " + erro.message, "erro");
+    } finally {
+      $("btn-salvar").disabled = false;
+    }
+  });
+
+  // ---------- Botões dos itens ----------
+  $("conteudo").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-acao]");
+    if (!btn) return;
+    const item = itens.find(i => i.id === btn.dataset.id);
+    if (!item) return;
+    const acao = btn.dataset.acao;
+
+    if (acao === "editar") return abrirItem(item);
+
+    // DELETE
+    if (acao === "excluir") {
+      if (!confirm(`Excluir "${item.titulo}"?`)) return;
+      try { await excluirItem(item.id); toast("Item excluído.", "ok"); }
+      catch (erro) { toast("Erro ao excluir: " + erro.message, "erro"); }
+      return;
+    }
+
+    // UPDATE rápido: ▶ Começar (fila → andamento) ou +10% de progresso
+    let mudanca;
+    if (acao === "comecar") mudanca = { status: "andamento", progresso: limitar(item.progresso, 0, 90) };
+    if (acao === "mais") {
+      const progresso = Math.min(100, limitar(item.progresso, 0, 100) + 10);
+      mudanca = { progresso, status: progresso === 100 ? "concluido" : "andamento" };
+    }
+    if (!mudanca) return;
+    btn.disabled = true;
+    try {
+      await atualizarItem(item.id, mudanca);
+      toast(mudanca.status === "concluido" ? "🏆 Concluído! Parabéns!"
+        : acao === "comecar" ? "▶ Bom começo!" : `Progresso: ${mudanca.progresso}%`, "ok");
+    } catch (erro) {
+      btn.disabled = false;
+      toast("Erro: " + erro.message, "erro");
+    }
+  });
+
+  // ---------- Login ----------
+  const modalLogin = $("modal-login"), loginErro = $("login-erro");
+  let modoCriar = false;
+  const MENSAGENS = {
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/user-not-found": "E-mail ou senha incorretos.",
+    "auth/email-already-in-use": "Esse e-mail já tem conta. Use \"Entrar\".",
+    "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/too-many-requests": "Muitas tentativas. Espere um pouco e tente de novo.",
+    "auth/operation-not-allowed": "Login por e-mail não está ativado no Firebase.",
+  };
+
+  function definirModo(criar) {
+    modoCriar = criar;
+    $("login-titulo").textContent = criar ? "Criar conta" : "Entrar";
+    $("btn-entrar").textContent = criar ? "Criar conta" : "Entrar";
+    $("btn-trocar-modo").textContent = criar ? "Já tem conta? Entrar" : "Não tem conta? Criar conta";
+    $("login-senha").autocomplete = criar ? "new-password" : "current-password";
+    loginErro.textContent = "";
+  }
+  function abrirLogin(criar = false) {
+    if (!LOGIN_ATIVO) return;
+    $("form-login").reset();
+    definirModo(criar === true);
+    modalLogin.classList.add("show");
+    $("login-email").focus();
+  }
+  const fecharLogin = () => modalLogin.classList.remove("show");
+
+  $("btn-login").addEventListener("click", () => abrirLogin(false));
+  $("btn-criar").addEventListener("click", () => abrirLogin(true));
+  $("hero-criar").addEventListener("click", () => abrirLogin(true));
+  $("hero-entrar").addEventListener("click", () => abrirLogin(false));
+  $("btn-fechar-login").addEventListener("click", fecharLogin);
+  $("btn-trocar-modo").addEventListener("click", () => definirModo(!modoCriar));
+  modalLogin.addEventListener("click", (e) => { if (e.target === modalLogin) fecharLogin(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { fecharLogin(); fecharItem(); } });
+
+  $("form-login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("login-email").value.trim(), senha = $("login-senha").value;
+    loginErro.textContent = "";
+    $("btn-entrar").disabled = true;
+    try {
+      await (modoCriar ? criarConta(email, senha) : entrar(email, senha));
+      fecharLogin();
+      toast(modoCriar ? "Conta criada! Bem-vindo(a)." : "Bem-vindo(a)!", "ok");
+    } catch (erro) {
+      console.error(erro);
+      loginErro.textContent = MENSAGENS[erro.code] || "Não foi possível entrar. Tente novamente.";
+    } finally {
+      $("btn-entrar").disabled = false;
+    }
+  });
+
+  $("btn-logout").addEventListener("click", async () => { await sair(); toast("Você saiu."); });
+
+  // Quando alguém entra ou sai: mostra o app ou a tela inicial e carrega só os dados dessa pessoa
+  const quando = (v) => typeof v?.toMillis === "function" ? v.toMillis() : (typeof v === "number" ? v : Date.now());
+  let pararDeOuvir = null;
+  observarLogin((user) => {
+    usuario = user ? { uid: user.uid, nome: (user.email || "você").split("@")[0] } : null;
+    $("btn-login").hidden = !LOGIN_ATIVO || !!usuario;
+    $("btn-criar").hidden = !LOGIN_ATIVO || !!usuario;
+    $("btn-logout").hidden = !LOGIN_ATIVO || !usuario;
+    $("btn-novo").hidden = !usuario;
+    $("auth-info").textContent = LOGIN_ATIVO && usuario ? user.email : "";
+    document.body.classList.remove("iniciando");
+    document.body.classList.toggle("deslogado", !usuario);
+
+    // troca de usuário: para de ouvir os dados antigos e limpa a tela
+    if (pararDeOuvir) pararDeOuvir();
+    pararDeOuvir = null;
+    itens = []; carregado = false; busca.value = "";
+    if (!usuario) { fecharItem(); renderizar(); return; }
+
+    // READ: ouve só os itens deste usuário (mais novos primeiro)
+    pararDeOuvir = ouvirItens(usuario.uid, (dados) => {
+      itens = dados.sort((a, b) => quando(b.criadoEm) - quando(a.criadoEm));
+      carregado = true;
+      renderizar();
+    }, (erro) => {
+      console.error(erro);
+      toast("Erro ao carregar: " + erro.message, "erro");
+    });
+    renderizar();
+  });
+</script>
+</body>
+</html>
